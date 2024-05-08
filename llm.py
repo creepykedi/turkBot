@@ -13,7 +13,7 @@ class TurkBot:
     def __init__(
             self,
             openai_key: str = os.getenv("CHAT_API"),
-            model_name: str = "gpt-4",
+            model_name: str = "gpt-4-turbo",
             temperature: float = .5,
             memory_depth: int = 3,
             dialogue_subject: str = 'Casual'
