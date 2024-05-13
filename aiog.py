@@ -39,11 +39,12 @@ class User:
 
 
 def choose_topic(update, context):
-    results = [InlineKeyboardButton(
-                text=option,
-                callback_data=option
-            ) for option in d_options]
-    reply_markup = InlineKeyboardMarkup([results])
+    keyboard = []
+    for i in range(0, len(d_options), buttons_per_row := 5):
+        row = [InlineKeyboardButton(text=option, callback_data=option) for option in d_options[i:i + buttons_per_row]]
+        keyboard.append(row)
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
     update.message.reply_text('Choose chat topic', reply_markup=reply_markup)
 
 
