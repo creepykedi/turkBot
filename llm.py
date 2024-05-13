@@ -66,7 +66,7 @@ class TurkBot:
 
     def _init_memory(self, memory_depth: int) -> ConversationBufferWindowMemory:
         memory = ConversationBufferWindowMemory(
-            k=min(max(3, memory_depth), 6),  # store between 3 and 6 last messages
+            k=min(max(3, int(memory_depth)), 6),  # store between 3 and 6 last messages
             ai_prefix='AI Turk',
             human_prefix='User',
             llm=self.model,

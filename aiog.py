@@ -40,7 +40,7 @@ class User:
 
 def choose_topic(update, context):
     keyboard = []
-    for i in range(0, len(d_options), buttons_per_row := 5):
+    for i in range(0, len(d_options), buttons_per_row := 3):
         row = [InlineKeyboardButton(text=option, callback_data=option) for option in d_options[i:i + buttons_per_row]]
         keyboard.append(row)
 
