@@ -13,7 +13,7 @@ class TurkBot:
     def __init__(
             self,
             openai_key: str = os.getenv("CHAT_API"),
-            model_name: str = "gpt-4-turbo",
+            model_name: str = "gpt-4o",
             temperature: float = .5,
             memory_depth: int = 3,
             dialogue_subject: str = 'Casual'
@@ -66,7 +66,7 @@ class TurkBot:
 
     def _init_memory(self, memory_depth: int) -> ConversationBufferWindowMemory:
         memory = ConversationBufferWindowMemory(
-            k=memory_depth,
+            k=min(max(3, memory_depth), 6),  # store between 3 and 6 last messages
             ai_prefix='AI Turk',
             human_prefix='User',
             llm=self.model,

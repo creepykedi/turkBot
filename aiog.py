@@ -9,8 +9,9 @@ load_dotenv()
 logger = get_logger(__name__)
 
 
-d_length_options: list = [3, 5, 10]
-d_options: list = ['Weather', 'Casual', 'Shopping', 'Food']
+d_length_options: list = [3, 5, 10, 15, 20, 30]
+d_options: list = ['Weather', 'Casual', 'Shopping', 'Food', 'Travel', 'Health', 'Sports', 'Technology', 'Music',
+                   'Movies']
 
 users = {}  # fake db {user_id: User}
 
@@ -187,6 +188,7 @@ class TgBot:
     def start_bot(self):
         self.updater.start_polling()
         self.updater.idle()
+
 
 if __name__ == '__main__':
     b = TgBot(token=os.getenv('telegram_bot_key'))
