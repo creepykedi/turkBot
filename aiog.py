@@ -25,8 +25,8 @@ class User:
     def set_topic(self, topic) -> None:
         self.topic = topic
 
-    def set_d_length(self, d_length) -> None:
-        self.d_length = d_length
+    def set_d_length(self, d_length: str) -> None:
+        self.d_length = int(d_length)
 
     def get_topic(self) -> str:
         return self.topic
@@ -128,11 +128,11 @@ class TgBot:
         topic: str = user_obj.get_topic()
         self._init_turk_bot(dialogue_subject=topic, memory_depth=length)
         logger.info("Init bot is done")
-        update.message.reply_text("Kemal bot is here! Default conversation topic is set to Casual. "
+        update.message.reply_text(f"Kemal bot is here! Conversation topic is set to {topic}. "
                                   "Type /help to see all of the options. Say Merhaba! 🙌🏻")
 
     def end(self, update, context):
-        self.turk_bot.end_dialogue()
+        update.message.reply_text(self.turk_bot.end_dialogue())
         update.message.reply_text('Goodbye! Talk to you again soon.')
 
     @staticmethod

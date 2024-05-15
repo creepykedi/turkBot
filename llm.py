@@ -8,6 +8,15 @@ from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder, HumanMess
 
 load_dotenv()
 
+evaluation_str: str = """Give evaluations based on my answers, in English language(show evaluation subject in response):
+        1. User wrote in Turkish - yes or no only.
+        2. User was talking about {dialogue_subject} - yes or no only.
+        3. Evaluate the user's Turkish grammar on scale from 1 to 10.
+        If first is no, score is 0. If second is no, penalize score by 50%, and mention user steered of subject. 
+        If score is less than 8, give a hint how to improve it and give at least 1 exact case where user 
+        has made a mistake and what it is. If he made several mistakes, walk through all of them.
+        Otherwise, say user's language is great and they should keep it up."""
+
 
 class TurkBot:
     def __init__(
@@ -24,7 +33,8 @@ class TurkBot:
         self.prompt: ChatPromptTemplate = self._init_prompt()
         self.memory: ConversationBufferWindowMemory = self._init_memory(memory_depth)
         self.bot: LLMChain = self._init_bot()
-        self.conversation_ended = False
+        self.conversation_ended: bool = False
+        self.current_dialogue_length: int = 0
 
     def _init_chat_model(self,
                          openai_api_key: str,
@@ -46,18 +56,13 @@ class TurkBot:
                 Your name is Kemal, you're a Turkish AI friend for the user. You need to have conversation with the user
                 in TURKISH language only on the subject {dialogue_subject}. You're friendly and polite. Use relatively
                 simple language, understandable for medium level Turkish speaker. 
-                Reply to the users' messages, ask your own questions within the subject. Once dialog is finished, 
-                do not ask any more questions, instead wrap up conversation with reply to the last message,
-                then give evaluations based on users answers, in English language:
-                1. User wrote in Turkish - yes or no only.
-                2. User was talking about {dialogue_subject} - yes or no only.
-                3. Evaluate the user's Turkish grammar on scale from 1 to 10.
-                If first is no, score is 0. If second is no, penalize score by 50%, and mention user steered of subject. 
-                If score is less than 8, give a hint how to improve it and give at least 1 exact case where user 
-                has made a mistake and what it is. Otherwise, say user's language is great and they should keep it up.
-                The dialogue must end when total amount of your answers reaches {memory_depth}.
+                Reply to the users' messages, ask your own questions within the subject. 
+                User will tell you when he wants to end the conversation with words "I decided to end conversation". 
+                Once dialogue is finished, do not ask any more questions, 
+                instead wrap up conversation with reply to the last message,
+                then {evaluation_str}.
                 """
-                .format(dialogue_subject=self.dialogue_subject, memory_depth=int(self.memory_depth)+1)
+                .format(dialogue_subject=self.dialogue_subject, evaluation_str=evaluation_str)
             ),
             MessagesPlaceholder(variable_name="chat_history"),
             HumanMessagePromptTemplate.from_template("{inputs}")
@@ -66,7 +71,7 @@ class TurkBot:
 
     def _init_memory(self, memory_depth: int) -> ConversationBufferWindowMemory:
         memory = ConversationBufferWindowMemory(
-            k=min(max(3, int(memory_depth)), 6),  # store between 3 and 6 last messages
+            k=min(max(5, int(memory_depth)), 8),  # store between 5 and 8 last messages
             ai_prefix='AI Turk',
             human_prefix='User',
             llm=self.model,
@@ -82,15 +87,26 @@ class TurkBot:
             prompt=self.prompt,
             memory=self.memory
         )
+        self.current_dialogue_length = 0
         return bot
 
-    def end_dialogue(self):
-        self.conversation_ended = True
+    def end_dialogue(self, last_msg: str | None = None):
+        if self.current_dialogue_length > 1:
+            evaluation = self.bot.predict(inputs=f"{last_msg if last_msg else ''}"
+                                                 f"\nI decided to stop conversation. {evaluation_str}")
+        else:
+            evaluation = ""
+        self.current_dialogue_length = 0
+        return evaluation
 
-    def tell(self, user_input) -> str:
+    def tell(self, user_input: str) -> str:
         if self.conversation_ended:
             return "The conversation has ended. To start a new conversation, please use the /start command."
-        return self.bot.predict(inputs=user_input)
+        if self.current_dialogue_length >= self.memory_depth:
+            return self.end_dialogue(user_input)
+        answer = self.bot.predict(inputs=user_input)
+        self.current_dialogue_length += 1
+        return answer
 
     def show_history(self) -> list:
         return self.memory.buffer
